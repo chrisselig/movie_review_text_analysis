@@ -1,0 +1,72 @@
+---
+title: "Criticker Reviews Text Mining Analysis"
+author: "Chris Selig"
+date: "4/18/2020"
+output: 
+    html_document: default
+    pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+    echo = TRUE,
+    include = FALSE,
+    warning = FALSE,
+    message = FALSE,
+    dpi = 300
+    )
+```
+
+```{r loadLibraries}
+# Data load
+library(XML)
+library(data.table)
+
+# General processing
+library(tidyverse)
+
+# Text mining
+library(tidytext)
+
+```
+
+```{r loadScripts}
+source('../01_scripts/01_data_processing.R')
+```
+
+# Summary
+My brother and a couple of his friends provide movie reviews on the site [Criticker.com](https://www.criticker.com/). I thought it would be fun to provide them with a text analysis of their movie reviews. What follows is that review.
+
+The workflow for this project will start with an exploration of the data, 
+
+The code for this analysis can be on my [Github page](https://github.com/chrisselig/movie_review_text_analysis).
+
+You can also find the three reviewers pages here:
+1. 
+
+2. 
+
+3. 
+
+## The Data
+The dataset is simple. It is comprised of 3 xml exports for each user and after cleaning, there are only two columns:
+
+1. quote: ghe movie review
+
+2. reviewer: the first name of the reviewer
+
+The following steps were taken to preprocess the data. 
+
+First, I only cared about movies that actually had a review so for any movies that just had a score were removed.
+
+Second, the movie reviews were tokenized. Tokenization means taking a review and breaking it out into one word per row. This makes the dataset significantly longer.
+
+Finally, a significant amount of words in the English language are not useful for sentiment analysis or prediction. Some examples are 'and' and 'the'. These words are otherwise known as stop words and have been removed from the dataset.
+
+## Exploratory Analysis
+A good place to start with any analysis is with an exploration of the data. First, I will take a look at the most common words from all the reviewers combined.
+
+```{r}
+
+```
+
