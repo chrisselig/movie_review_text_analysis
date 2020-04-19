@@ -8,22 +8,11 @@
 #################################################################################
 
 
-# Script to create and test functions used in Shiny app ----
-
-# Load Libraries ----
-library(XML)
-library(data.table)
-library(tidyverse)
-library(tidytext)
-
-#library(janitor)
-
-
 # Load Data ----
 # Criticker Ratings
-tyler_reviews_raw <- as.data.table(XML::xmlToDataFrame('00_data/tyler_ratings.xml'))
-justin_reviews_raw <- as.data.table(XML::xmlToDataFrame('00_data/justin_ratings.xml'))
-zach_reviews_raw <- as.data.table(XML::xmlToDataFrame('00_data/zach_ratings.xml'))
+tyler_reviews_raw <- as.data.table(XML::xmlToDataFrame('../00_data/tyler_ratings.xml'))
+justin_reviews_raw <- as.data.table(XML::xmlToDataFrame('../00_data/justin_ratings.xml'))
+zach_reviews_raw <- as.data.table(XML::xmlToDataFrame('../00_data/zach_ratings.xml'))
 
 # Clean Reviews Data ----
 
@@ -48,3 +37,5 @@ tidy_reviews <- reviews %>%
     unnest_tokens(word, quote) %>% 
     # Remove stop words
     anti_join(stop_words)
+
+rm(justin_reviews_raw,tyler_reviews_raw,zach_reviews_raw,reviews_list)
