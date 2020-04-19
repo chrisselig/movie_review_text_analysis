@@ -1,7 +1,7 @@
 ---
 title: "Criticker Reviews Text Mining Analysis"
 author: "Chris Selig"
-date: "4/18/2020"
+date: "`r Sys.Date()`"
 output: 
     html_document: default
     pdf_document: default
@@ -9,8 +9,8 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-    echo = TRUE,
-    include = FALSE,
+    echo = FALSE,
+    include = TRUE,
     warning = FALSE,
     message = FALSE,
     dpi = 300
@@ -25,13 +25,23 @@ library(data.table)
 # General processing
 library(tidyverse)
 
+# Formatting
+library(scales)
+library(ggrepel)
+
+# Create nice tables
+library(gt)
+
 # Text mining
 library(tidytext)
 
+# Themes
+library(ggthemes)
 ```
 
 ```{r loadScripts}
 source('../01_scripts/01_data_processing.R')
+source('../01_scripts/02_plotting.R')
 ```
 
 # Summary
@@ -42,16 +52,17 @@ The workflow for this project will start with an exploration of the data,
 The code for this analysis can be on my [Github page](https://github.com/chrisselig/movie_review_text_analysis).
 
 You can also find the three reviewers pages here:
-1. 
 
-2. 
+1. [Tyler](https://www.criticker.com/profile/Obdurate/)
 
-3. 
+2. [Zach](https://www.criticker.com/profile/XakkMaster/)
+
+3. [Justin](https://www.criticker.com/profile/TheRealJ_Ro/)
 
 ## The Data
 The dataset is simple. It is comprised of 3 xml exports for each user and after cleaning, there are only two columns:
 
-1. quote: ghe movie review
+1. quote: The movie review
 
 2. reviewer: the first name of the reviewer
 
@@ -64,9 +75,200 @@ Second, the movie reviews were tokenized. Tokenization means taking a review and
 Finally, a significant amount of words in the English language are not useful for sentiment analysis or prediction. Some examples are 'and' and 'the'. These words are otherwise known as stop words and have been removed from the dataset.
 
 ## Exploratory Analysis
-A good place to start with any analysis is with an exploration of the data. First, I will take a look at the most common words from all the reviewers combined.
+A good place to start with any analysis is with an exploration of the data. 
 
-```{r}
+First, a quick look at how many reviews have been created and how many total words have been written for each reviewer.
+
+```{r summaryTable}
+
+total_word_count <- reviews %>% 
+    unnest_tokens(word, quote) %>% 
+    group_by(reviewer) %>% 
+    summarise(`Total Word Count` = n())
+
+min_word_count <- reviews %>%
+    group_by(reviewer) %>%
+    mutate(wc = str_count(quote, '\\w+')) %>% 
+    select(-quote) %>% 
+    summarize(`Shortest Review` = min(wc))
+
+max_word_count <- reviews %>%
+    group_by(reviewer) %>%
+    mutate(wc = str_count(quote, '\\w+')) %>% 
+    select(-quote) %>% 
+    summarize(`Longest Review` = max(wc))
+
+word_count_without_stop_words <- reviews %>% 
+    unnest_tokens(word, quote) %>% 
+    anti_join(stop_words) %>% 
+    group_by(reviewer) %>% 
+    summarise(`Word Count \n excl Stop Words` = n())
+
+review_count_gt <- reviews %>%
+    group_by(reviewer) %>% 
+    summarize(
+        `Review Count` = n()
+    ) %>% 
+    left_join(total_word_count) %>% 
+    left_join(word_count_without_stop_words) %>% 
+    mutate(`Avg Word Count per Review` = round(`Total Word Count`/`Review Count`,1)) %>% 
+    left_join(min_word_count) %>% 
+    left_join(max_word_count) %>% 
+    rename(Reviewer = reviewer) %>% 
+    mutate(`% of Stop Words` = 1-round(`Word Count \n excl Stop Words`/`Total Word Count`,2)) %>% 
+    # Create gt table for the plot
+    gt() %>%
+    tab_header(
+        title = "Review Summary",
+        subtitle = "Summary Statistics for Each Reviewer"
+    ) %>% 
+    # Formatting values in columns
+    fmt_number(
+        columns = vars(`Review Count`, `Total Word Count`, `Word Count \n excl Stop Words`,`Avg Word Count per Review`),
+        decimals = 0
+    ) %>% 
+    fmt_percent(
+        columns = vars(`% of Stop Words`),
+        decimals = 1
+    ) %>% 
+    # Center columns
+    cols_align(
+        align = "center",
+        columns = everything()
+    ) %>%   
+    # Title Styling
+    tab_style(
+        style = list(
+            cell_text(
+                font = "memphis",
+                color = "#4C586F")
+        ),
+        locations = cells_title(groups = c("title"))
+    ) %>% 
+    # Change font of different table areas
+    tab_style(
+        style = list(
+            cell_text(font = "Arno Pro Light Display")
+        ),
+        locations = list(
+            cells_body(columns = TRUE, rows = TRUE),
+            # cells_summary(groups = TRUE, columns = TRUE, rows = TRUE),
+            cells_column_labels(columns = everything()),
+            cells_row_groups()
+        )
+    ) %>% 
+    tab_options(
+        # Remove top border
+        table.border.top.color = "white",
+        column_labels.vlines.color = 'white',
+        # Change the style of horizontal lines (hlines)
+        table_body.hlines.style = "dashed",
+        # Change the color of the hlines
+        table_body.hlines.color = '#CBC5C1'
+    )
+
+review_count_gt
 
 ```
 
+Some observations from the summary statistics. Zach has the fewest total reviews while Tyler has the most. All 3 reviewers have the same average word count per reviews. All three have a one word review while the longest reviews for each are all around the same word count. Finally, Zach has the lowest percentage of stop words among the three leading me to believe his reviews may be more concise than the other two reviewers.
+
+Second, I will take a look at the most common words from all the reviewers combined.
+
+```{r topWords, include=TRUE}
+# Set theme for all plots
+theme_set(theme_tufte())
+
+tidy_reviews %>% 
+    count(word) %>% 
+    mutate(
+        prop = percent(n/sum(n),accuracy = .1),
+        label_text = str_glue('{n} ({prop})')
+        ) %>% 
+    arrange(desc(n)) %>% 
+    head(10) %>%
+    bar_charts_func(x = word, y = n, 
+                label = label_text,
+                title = 'Most Common Reviewer Words',
+                subtitle = 'Shows counts and proportions of the 10 most common words used by all the reviewers',
+                xlabel = '',
+                ylabel = ''
+    )
+    
+```
+
+Looking at the image above, the top word used across all three reviewers is 'movie', which is not a big surprise. Furthermore, none of the words on the list look out of place for movie reviewers. 
+
+After knowing the top ten words, lets look at the top 10 words for each reviewer.
+
+```{r}
+tidy_reviews %>% 
+    group_by(reviewer) %>% 
+    count(word) %>% 
+    top_n(10, n) %>% 
+    ungroup() %>% 
+    mutate(word = tidytext::reorder_within(word, n,reviewer)) %>%
+    mutate(
+        prop = percent(n/sum(n),accuracy = .1),
+        label_text = str_glue('{n}\n{prop}')
+    ) %>% 
+    arrange(desc(n)) %>% 
+    mutate(word2 = str_extract(word, "[^_]+")) %>% 
+    bar_charts_func(x = word, y = n, 
+                    facet = TRUE, 
+                    facet_variable = reviewer,
+                    label = label_text,
+                    title = 'Most Commonly Used Words by Reviewer',
+                    subtitle = 'Shows counts and proportions of the 10 most common words used by reviewer',
+                    xlabel = '',
+                    ylabel = '',
+                    hjust = 1.25,
+                    size = 1.9)
+```
+
+Generally speaking, both Tyler and Justin use some pretty similar words. What is interesting to me is that Zach actually uses 'film' more often than 'movie', which is less popular between Tyler and Justin. Also, Zach likes to talk about scenes more often than both Tyler or Justin.
+
+Previously we only looked at the top 10 words for each reviewer. Now we will visually look at the frequencies of all the words by reviewer.
+
+```{r frequencyPlot}
+freq_tbl <- tidy_reviews %>% 
+    group_by(reviewer) %>% 
+    count(reviewer,word) %>% 
+    mutate(proportion = n/sum(n)) %>% 
+    select(-n) %>% 
+    pivot_wider(
+        names_from = reviewer,
+        values_from = proportion
+    ) %>% 
+    pivot_longer(
+        cols = c(Justin,Zach),
+        names_to = 'reviewer',
+        values_to = 'proportion'
+    )
+
+freq_tbl %>% 
+    ggplot(aes(x = proportion, y = Tyler, color = abs(Tyler - proportion))) +
+    # Geoms
+    geom_abline(color = 'gray40', lty = 2) +
+    geom_jitter(alpha = 0.1, size = 2.5,width = 0.3, height = 0.3) +
+    geom_text(aes(label = word), check_overlap = TRUE, vjust = 1.5) +
+    # Formatting
+    labs(
+        title = 'Word Frequencies by Reviewers',
+        subtitle = 'Compares the Frequencies of Words Between Each Reviewer',
+        y = 'Tyler', 
+        x = NULL 
+    ) +
+    scale_x_log10(labels = percent_format()) +
+    scale_y_log10(labels = percent_format()) +
+    scale_color_gradient(limits = c(0,0.001),
+                         low = '#CBF8DF', high = '#4C586F') +
+    facet_wrap(~reviewer, ncol = 2) +
+    theme(
+        plot.title = element_text(size = 14, family = "memphis",color = '#4C586F', face = 'bold'),
+        plot.subtitle = element_text(hjust = 0.01, size = 11,family = "Arno Pro Light Display"),
+        legend.position = 'none'
+    ) 
+```
+
+Above, the frequencies of each word are plotted against each reviewer. Words along the dotted line have similar frequencies between the two reviewers. So, in the left panel, both Tyler and Justin use "movies", "bad", and "character" with similar frequencies. Words that are farther from the line are words that appear more often in one reviewers text than the other. For example from the right panel, Zach has the words "disney", and "viewer" appear more frequently than in Tyler's while Tyler has "pretty" and "nice" appear more often.
