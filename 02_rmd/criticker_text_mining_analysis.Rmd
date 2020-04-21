@@ -44,6 +44,11 @@ source('../01_scripts/01_data_processing.R')
 source('../01_scripts/02_plotting.R')
 ```
 
+```{r loadFonts}
+windowsFonts(memphis=windowsFont("memphis"))
+windowsFonts(ArnoProLightDisplay = windowsFont("Arno Pro Light Display"))
+```
+
 # Summary
 My brother and a couple of his friends provide movie reviews on the site [Criticker.com](https://www.criticker.com/). I thought it would be fun to provide them with a text analysis of their movie reviews. What follows is that review.
 
@@ -187,7 +192,7 @@ tidy_reviews %>%
         ) %>% 
     arrange(desc(n)) %>% 
     head(10) %>%
-    bar_charts_func(x = word, y = n, 
+    bar_charts_func( 
                 label = label_text,
                 title = 'Most Common Reviewer Words',
                 subtitle = 'Shows counts and proportions of the 10 most common words used by all the reviewers',
@@ -213,8 +218,7 @@ tidy_reviews %>%
         label_text = str_glue('{n}\n{prop}')
     ) %>% 
     arrange(desc(n)) %>% 
-    mutate(word2 = str_extract(word, "[^_]+")) %>% 
-    bar_charts_func(x = word, y = n, 
+    bar_charts_func(
                     facet = TRUE, 
                     facet_variable = reviewer,
                     label = label_text,
@@ -272,3 +276,48 @@ freq_tbl %>%
 ```
 
 Above, the frequencies of each word are plotted against each reviewer. Words along the dotted line have similar frequencies between the two reviewers. So, in the left panel, both Tyler and Justin use "movies", "bad", and "character" with similar frequencies. Words that are farther from the line are words that appear more often in one reviewers text than the other. For example from the right panel, Zach has the words "disney", and "viewer" appear more frequently than in Tyler's while Tyler has "pretty" and "nice" appear more often.
+
+## Relationships Between Words
+
+After looking at the counts and frequency of single words, it is time to look at the relationship between words. The first part of section we will be looking at n-grams. N-grams are sets of adjacent words. For example, bigrams are two words in the text that are adaject and trigrams are three adjacent words. 
+
+Below are the top bigrams for each reviewer.
+
+```{r calcBigrams}
+bigrams <- reviews %>% 
+    group_by(reviewer) %>% 
+    unnest_tokens(bigram, quote, token = 'ngrams', n = 2)
+
+# Separate bigrams so we can remove stop words
+bigram_counts <- bigrams %>% 
+    separate(bigram, c('word1','word2'), sep = ' ') %>% 
+    filter(!word1 %in% stop_words$word) %>% 
+    filter(!word2 %in% stop_words$word) %>% 
+    count(word1, word2, sort = TRUE)
+```
+
+```{r visualizeBigrams}
+bigram_counts %>%
+    group_by(reviewer) %>%
+    top_n(10, n) %>%
+    ungroup() %>%
+    mutate(word = str_glue('{word1} {word2}')) %>% 
+    mutate(word = tidytext::reorder_within(word, n,reviewer)) %>%
+    mutate(
+        prop = percent(n/sum(n),accuracy = .1),
+        label_text = str_glue('{n}\n{prop}')
+    ) %>%
+    arrange(desc(n)) %>%
+    bar_charts_func(
+                    facet = TRUE,
+                    facet_variable = reviewer,
+                    label = label_text,
+                    title = 'Most Commonly Used Bigrams by Reviewer',
+                    subtitle = 'Shows counts and proportions of the 10 most common bigrams used by each reviewer',
+                    xlabel = '',
+                    ylabel = '',
+                    hjust = 1.25,
+                    size = 1.9)
+```
+
+Now it is starting to get interesting. I would guess that all three reviewers prefer sci-fi movies because it is the most popular adjacent words in the data sets for them. Zach appears to really like the actor Robert Deniro because he is in the top ten bigrams. Tyler and Justin also appear to watch quite a few horror movies, but Tyler appears to watch more action movies than horror movies. Zach appears to discuss more of the meta parts of films, including special effects, voice acting and physical comedy as well as having a place in his heart for movies with love stories. 
