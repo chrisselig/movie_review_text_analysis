@@ -9,17 +9,15 @@
 
 # Bar Charts ----
 bar_charts_func <- function(data, 
-                       x = word,
-                       y = n,
-                       facet = FALSE,
-                       facet_variable = NA,
-                       label,
-                       title,
-                       subtitle,
-                       xlabel,
-                       ylabel,
-                       hjust = 1.25,
-                       size = 3){
+                            facet = FALSE,
+                            facet_variable = NA,
+                            label,
+                            title,
+                            subtitle,
+                            xlabel,
+                            ylabel,
+                            hjust = 1.25,
+                            size = 3){
     
     p <- data %>% 
         ggplot(aes(n,reorder(word,n))) +
@@ -43,13 +41,59 @@ bar_charts_func <- function(data,
         ) +
         theme(
             plot.title = element_text(size = 14, family = "memphis",color = '#4C586F', face = 'bold'),
-            plot.subtitle = element_text(hjust = 0.01, size = 11,family = "Arno Pro Light Display"),
+            plot.subtitle = element_text(hjust = 0.01, size = 11,family = "ArnoProLightDisplay"),
             axis.text.x=element_blank(),
             axis.ticks.x=element_blank(),
             legend.position = "none"
         )
     return(p)
 }
+
+
+
+
+# bar_charts_func <- function(data, 
+#                        x = word,
+#                        y = n,
+#                        facet = FALSE,
+#                        facet_variable = NA,
+#                        label,
+#                        title,
+#                        subtitle,
+#                        xlabel,
+#                        ylabel,
+#                        hjust = 1.25,
+#                        size = 3){
+#     
+#     p <- data %>% 
+#         ggplot(aes(x = n,y = reorder(word,n))) +
+#         # Geoms
+#         geom_bar(stat = 'identity',aes(fill = n))
+#     
+#     if(facet){
+#         p <- p + facet_wrap(~reviewer,scales = "free")
+#     }
+#     
+#     p <- p +
+#         geom_text(aes(label = label_text), size = size, hjust = hjust, color = 'white') +
+#         tidytext::scale_y_reordered() +
+#         # Formatting
+#         scale_fill_gradient2(low='white', mid='#A2AAB0', high='#3E3E3B') +
+#         labs(
+#             title = title,
+#             subtitle = subtitle,
+#             x = xlabel,
+#             y = ylabel
+#         ) +
+#         theme(
+#             plot.title = element_text(size = 14, family = "memphis",color = '#4C586F', face = 'bold'),
+#             plot.subtitle = element_text(hjust = 0.01, size = 11,family = "Arno Pro Light Display"),
+#             axis.text.x=element_blank(),
+#             axis.ticks.x=element_blank(),
+#             legend.position = "none"
+#         )
+#     return(p)
+# }
 
 
 # Testing ----
