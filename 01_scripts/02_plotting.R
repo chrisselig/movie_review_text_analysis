@@ -49,54 +49,44 @@ bar_charts_func <- function(data,
     return(p)
 }
 
+# Network graph ----
+network_graph_func <- function(data = bigram_counts,
+                               reviewer = 'Justin',
+                               num = 4,
+                               title = 'title',
+                               subtitle = 'subtitle'){
+    
+    # Transform data to proper format
+    data %>% 
+        filter(reviewer == !!reviewer) %>% 
+        ungroup() %>% 
+        select(-reviewer) %>% 
+        filter(n > num) %>% 
+        graph_from_data_frame() %>% 
+        
+     # Create the network graph  
+        ggraph(layout = 'fr') +
+        geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                       end_cap = circle(.07,'inches')) +
+        geom_node_point(color = '#CBC5C1', size = 3) +
+        geom_node_text(aes(label = name), vjust = 1, hjust = 1,family = "ArnoProLightDisplay") +
+        labs(
+            title = title,
+            subtitle = subtitle
+        ) +
+        theme(
+            plot.title = element_text(size = 14, family = "memphis",color = '#4C586F', face = 'bold'),
+            plot.subtitle = element_text(hjust = 0.01, size = 11,family = "ArnoProLightDisplay"),
+            axis.text.x=element_blank(),
+            axis.ticks.x=element_blank(),
+            legend.position = "none"
+        )
+}
 
-
-
-# bar_charts_func <- function(data, 
-#                        x = word,
-#                        y = n,
-#                        facet = FALSE,
-#                        facet_variable = NA,
-#                        label,
-#                        title,
-#                        subtitle,
-#                        xlabel,
-#                        ylabel,
-#                        hjust = 1.25,
-#                        size = 3){
-#     
-#     p <- data %>% 
-#         ggplot(aes(x = n,y = reorder(word,n))) +
-#         # Geoms
-#         geom_bar(stat = 'identity',aes(fill = n))
-#     
-#     if(facet){
-#         p <- p + facet_wrap(~reviewer,scales = "free")
-#     }
-#     
-#     p <- p +
-#         geom_text(aes(label = label_text), size = size, hjust = hjust, color = 'white') +
-#         tidytext::scale_y_reordered() +
-#         # Formatting
-#         scale_fill_gradient2(low='white', mid='#A2AAB0', high='#3E3E3B') +
-#         labs(
-#             title = title,
-#             subtitle = subtitle,
-#             x = xlabel,
-#             y = ylabel
-#         ) +
-#         theme(
-#             plot.title = element_text(size = 14, family = "memphis",color = '#4C586F', face = 'bold'),
-#             plot.subtitle = element_text(hjust = 0.01, size = 11,family = "Arno Pro Light Display"),
-#             axis.text.x=element_blank(),
-#             axis.ticks.x=element_blank(),
-#             legend.position = "none"
-#         )
-#     return(p)
-# }
 
 
 # Testing ----
+# data <- bigram_counts
 # data <- tidy_reviews %>%
 #     group_by(reviewer) %>%
 #     count(word) %>%
