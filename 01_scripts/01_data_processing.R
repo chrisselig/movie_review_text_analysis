@@ -34,6 +34,28 @@ reviews <- reviews[,c(1:8,10:11) :=NULL] # To be used for text mining
 reviews <- reviews[!is.na(quote)]
 reviews <- reviews[quote != '']
 
+# Add rating buckets
+reviews_with_movies_ratings <- reviews_with_movies_ratings %>% 
+    mutate(rating_category = case_when(
+        reviewer == 'Justin' & rating <= 15 ~ 'Horrible',
+        reviewer == 'Justin' & rating <= 34 ~ 'Bad',
+        reviewer == 'Justin' & rating <= 69 ~ 'Average',
+        reviewer == 'Justin' & rating <= 79 ~ 'Good',
+        reviewer == 'Justin' & rating <= 89 ~ 'Great',
+        reviewer == 'Justin' & rating <= 100 ~ 'Exceptional',
+        reviewer == 'Zach' & rating <= 24 ~ 'Horrible',
+        reviewer == 'Zach' & rating <= 49 ~ 'Bad',
+        reviewer == 'Zach' & rating <= 69 ~ 'Average',
+        reviewer == 'Zach' & rating <= 79 ~ 'Good',
+        reviewer == 'Zach' & rating <= 89 ~ 'Great',
+        reviewer == 'Zach' & rating <= 100 ~ 'Exceptional',
+        reviewer == 'Tyler' & rating <= 24 ~ 'Horrible',
+        reviewer == 'Tyler' & rating <= 49 ~ 'Bad',
+        reviewer == 'Tyler' & rating <= 69 ~ 'Average',
+        reviewer == 'Tyler' & rating <= 79 ~ 'Good',
+        reviewer == 'Tyler' & rating <= 89 ~ 'Great',
+        reviewer == 'Tyler' & rating <= 100 ~ 'Exceptional'
+    ))
 
 # Final processing - tokenization ----
 tidy_reviews <- reviews %>% 
