@@ -29,11 +29,16 @@ library(tidyverse)
 library(scales)
 library(ggrepel)
 
-# Create nice tables
-library(gt)
+# Extra charting capabilities
+library(gt) # create pretty tables
+library(ggraph) # create network graphs
+library(wordcloud) # create wordclouds
 
-# Text mining
+# Analytics
 library(tidytext)
+library(igraph)
+library(widyr)
+library(sentimentr)
 
 # Themes
 library(ggthemes)
@@ -65,7 +70,7 @@ You can also find the three reviewers pages here:
 3. [Justin](https://www.criticker.com/profile/TheRealJ_Ro/)
 
 ## The Data
-The dataset is simple. It is comprised of 3 xml exports for each user and after cleaning, there are only two columns:
+The dataset is simple. It is comprised of an xml export for each user and after cleaning, there are only two columns:
 
 1. quote: The movie review
 
@@ -232,7 +237,47 @@ tidy_reviews %>%
 
 Generally speaking, both Tyler and Justin use some pretty similar words. What is interesting to me is that Zach actually uses 'film' more often than 'movie', which is less popular between Tyler and Justin. Also, Zach likes to talk about scenes more often than both Tyler or Justin.
 
-Previously we only looked at the top 10 words for each reviewer. Now we will visually look at the frequencies of all the words by reviewer.
+Previously we only looked at the top 10 words for each reviewer. Below you will find a visual representation (wordcloud) of all words for each reviewer. To read the wordcloud, the largest text is the word appearing most frequently in the reviews. Below are the wordclouds for Justin, Tyler and Zach.
+
+```{r}
+set.seed(42)
+
+wc_data <- tidy_reviews %>% 
+    group_by(reviewer) %>% 
+    count(word) %>% 
+    filter(n > 1) %>% 
+    ungroup()
+    
+wc_data %>% 
+    filter(reviewer == 'Justin') %>% 
+    with(wordcloud(word, freq = n, min.freq = 1, max.words=150, random.order=FALSE, rot.per=0.35,colors=brewer.pal(8, "Dark2")))
+
+title('Justin\'s Words')
+
+
+```
+
+```{r}
+set.seed(42)
+
+wc_data %>% 
+    filter(reviewer == 'Tyler') %>% 
+    with(wordcloud(word, freq = n, min.freq = 1, max.words=150, random.order=FALSE, rot.per=0.35,colors=brewer.pal(8, "Dark2")))
+
+title('Tyler\'s Words')
+```
+
+```{r zachWordCloud}
+set.seed(42)
+
+wc_data %>% 
+    filter(reviewer == 'Zach') %>% 
+    with(wordcloud(word, freq = n, min.freq = 1, max.words=150, random.order=FALSE, rot.per=0.35,colors=brewer.pal(8, "Dark2")))
+
+title('Zach\'s Words')
+```
+
+After looking at the top ten words and all the words for each reviewer, we can visually look at the frequencies of all the words by a reviewer compared to another reviewer.
 
 ```{r frequencyPlot}
 freq_tbl <- tidy_reviews %>% 
@@ -321,3 +366,84 @@ bigram_counts %>%
 ```
 
 Now it is starting to get interesting. I would guess that all three reviewers prefer sci-fi movies because it is the most popular adjacent words in the data sets for them. Zach appears to really like the actor Robert Deniro because he is in the top ten bigrams. Tyler and Justin also appear to watch quite a few horror movies, but Tyler appears to watch more action movies than horror movies. Zach appears to discuss more of the meta parts of films, including special effects, voice acting and physical comedy as well as having a place in his heart for movies with love stories. 
+
+As with individual words, we also want to take a look at not just the top ten bigrams, but also the relationship between all bigrams. We will do this using a network graph. A network graph shows the connections between nodes, which are words in this case. Network graphs are really popular in social media data analytics.
+
+We will look at each reviewer separately, starting with Justin. Note, shape of the graphs do not matter. They are randomly generated each time the code is run so no meaning should be derived from them.
+
+
+```{r justinNetwork}
+network_graph_func(
+    bigram_counts,reviewer = 'Justin', num = 4, title = 'Bigrams for Justin',subtitle = 'To keep chart clean, only bigrams with 5 or more appearances are visualized'
+)
+```
+
+A quick glance at the network graph shows some normal connections, for example around 'movie'. It is connected to typical words related to movies like 'kids', 'horror', and 'comic'. He appears to also like to use phrases such as 'totally worth watching' or 'totally worth checking'. It also appears that he likes to talk about actors because they appear frequently: 'Tom Cruise','Liam Neeson', and 'Martin Lawrence'. I'm also trying to figure out why he talks about 'pro wresting' so much. 
+
+Below is the network graph of Tyler's bigrams. Like Justin, Tyler also likes to mention actor names, like 'Tom Cruise'. The most interesting part (to me) is the cluster around 'movie(s)'. Pretty extinsively, Tyler uses the word 'movie' but not just for talking about the genre, but also his feelings about the movie: 'forgettable', 'pretty', and 'funniest'. 
+
+```{r tylerNetwork}
+network_graph_func(
+    bigram_counts,reviewer = 'Tyler', num = 4, title = 'Bigrams for Tyler',subtitle = 'To keep chart clean, only bigrams with 5 or more appearances are visualized'
+)
+```
+
+Finally, we move onto Zach's bigrams. The first thing you probably noticed is that Zach's network graph is quite a bit more sparse than the others. That is because he has the lowest review count and so there is a smaller mount of adjacent words. Zach's reviews appear to frequently discuss the characters, whether they were main or support and if they were memorable. He also apparently likes true love stories. 
+
+```{r zachNetwork}
+network_graph_func(
+    bigram_counts,reviewer = 'Zach', num = 4, title = 'Bigrams for Zach',subtitle = 'To keep chart clean, only bigrams with 5 or more appearances are visualized'
+)
+```
+
+## Sentiment Analysis
+
+Now that we have taken a look at the individual and adjacent words, it is time to look at the sentiment of the movie reviews. We are not going to look at the sentiment of individual words because it is a bit too primitive and the English language syntactically complex and lexically rich. 
+
+The algorithm I will use is a bit better than sentiment by word. It uses "valence shifters" that help adjust the sentiment score. For example, if you do sentiment analysis on the single word "happy", the score is positive. Obviously though, if the phrase is "not happy" it is no longer positive but a single word sentiment analysis would not pick that up. The valence shifters will help adjust "not happy" to negative or at least less positive.
+
+```{r}
+sentence_sentiment <- reviews %>%
+    group_by(reviewer) %>% 
+    unnest_tokens(sentence, quote, token = 'sentences') %>% 
+    ungroup() %>% 
+    get_sentences(quote) %>% 
+    # sentimentr::sentiment()
+    sentiment_by(quote, list(reviewer, movie))
+
+```
+
+
+
+## Review Classificiation
+Finally, it is time to do a little classification modeling. The end goal here will be to see if we can correctly classify the reviews into the categories for each reviewer. 
+
+Bucket Stuff:
+
+Justin:
+Horrific: 0 - 15
+Bad: 16 - 34
+Average: 35 - 69
+Good: 70 - 79
+Great: 80 - 89
+Exceptional: 90 - 100
+
+Zach:
+Horrible: 0 - 24
+Bad: 25 - 49
+Average: 50 - 69
+Good: 70 - 79
+Great: 80 - 89
+Exceptional: 90 - 100
+
+
+Tyler:
+Horrible: 0 - 24
+Bad: 25 - 49
+Average: 50 - 69
+Good: 70 - 79
+Great: 80 - 89
+Exceptional: 90 - 100
+
+
+This is how each reviewer categorizes their review score.
