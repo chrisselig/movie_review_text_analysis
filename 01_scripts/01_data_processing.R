@@ -26,11 +26,14 @@ review_list <- list(tyler_reviews_raw, justin_reviews_raw, zach_reviews_raw)
 reviews <- rbindlist(review_list)
 
 # Remove unwated columns
-reviews <- reviews[,c(1:8,10:11) :=NULL]
+reviews_with_movies_ratings <- reviews[,c(1:2,4:6,8,10:11) := NULL] # To be used for sentiment analysis
+reviews <- reviews[,c(1:8,10:11) :=NULL] # To be used for text mining
+
 
 # Remove unwanted rows
 reviews <- reviews[!is.na(quote)]
 reviews <- reviews[quote != '']
+
 
 # Final processing - tokenization ----
 tidy_reviews <- reviews %>% 
