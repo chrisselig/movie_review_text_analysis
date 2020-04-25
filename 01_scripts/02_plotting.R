@@ -83,7 +83,28 @@ network_graph_func <- function(data = bigram_counts,
         )
 }
 
-
+histogram_function <- function(data = sentence_sentiment,
+                          reviewer_name = 'Tyler',
+                          bin_num = 30){
+    
+    data %>% 
+        filter(reviewer == reviewer_name) %>% 
+        ggplot(aes(ave_sentiment)) +
+        geom_histogram(bins = bin_num, fill = '#4C586F') +
+        # Formatting
+        labs(
+            title = str_glue("{reviewer_name}'s Movie Sentiment Distribution"),
+            x = 'Average Sentiment',
+            y = ''
+        ) +
+        theme(
+            plot.title = element_text(size = 14, family = "memphis",color = '#4C586F', face = 'bold'),
+            plot.subtitle = element_text(hjust = 0.01, size = 11,family = "ArnoProLightDisplay"),
+            axis.ticks.x=element_blank(),
+            legend.position = "none"
+        )
+    
+}
 
 # Testing ----
 # data <- bigram_counts
