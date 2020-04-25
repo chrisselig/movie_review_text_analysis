@@ -22,7 +22,7 @@ bar_charts_func <- function(data,
     p <- data %>% 
         ggplot(aes(n,reorder(word,n))) +
         # Geoms
-        geom_bar(stat = 'identity',aes(fill = n))
+        geom_bar(stat = 'identity',aes(fill = n), fill = '#A2AAB0')
     
     if(facet){
         p <- p + facet_wrap(~reviewer,scales = "free")
@@ -32,7 +32,7 @@ bar_charts_func <- function(data,
         geom_text(aes(label = label_text), size = size, hjust = hjust, color = 'white') +
         tidytext::scale_y_reordered() +
         # Formatting
-        scale_fill_gradient2(low='white', mid='#A2AAB0', high='#3E3E3B') +
+        #scale_fill_gradient2(low='white', mid='#A2AAB0', high='#3E3E3B') +
         labs(
             title = title,
             subtitle = subtitle,
@@ -83,6 +83,7 @@ network_graph_func <- function(data = bigram_counts,
         )
 }
 
+# Histogram ----
 histogram_function <- function(data = sentence_sentiment,
                           reviewer_name = 'Tyler',
                           bin_num = 30){
@@ -90,7 +91,7 @@ histogram_function <- function(data = sentence_sentiment,
     data %>% 
         filter(reviewer == reviewer_name) %>% 
         ggplot(aes(ave_sentiment)) +
-        geom_histogram(bins = bin_num, fill = '#4C586F') +
+        geom_histogram(bins = bin_num, fill = '#CBC5C1') +
         # Formatting
         labs(
             title = str_glue("{reviewer_name}'s Movie Sentiment Distribution"),
@@ -103,6 +104,29 @@ histogram_function <- function(data = sentence_sentiment,
             axis.ticks.x=element_blank(),
             legend.position = "none"
         )
+    
+}
+
+# Scatterplot ----
+scatterplot_function <- function(data = sentence_sentiment,
+                                 reviewer_name){
+    
+    data %>% 
+        filter(reviewer == reviewer_name) %>% 
+        left_join(reviews_with_movies_ratings, by = c('reviewer' = 'reviewer','filmname' = 'filmname')) %>% 
+        select(reviewer, ave_sentiment, rating) %>% 
+        filter(!is.na(rating)) %>% 
+        ggplot(aes(rating, ave_sentiment)) +
+        geom_point(color = '#CBC5C1') +
+        scale_x_discrete(breaks = breaks_pretty(n = 8)) +
+        labs(
+            title = str_glue("{reviewer_name}'s Average Sentiment Compared to Movie Rating"),
+                             y = 'Avg Sentiment') +
+                theme(
+                    plot.title = element_text(size = 14, family = "memphis",color = '#4C586F', face = 'bold'),
+                    plot.subtitle = element_text(hjust = 0.01, size = 11,family = "ArnoProLightDisplay"),
+                    axis.ticks.x=element_blank()
+                )
     
 }
 
