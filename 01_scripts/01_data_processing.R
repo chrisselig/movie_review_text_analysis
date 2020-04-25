@@ -24,9 +24,10 @@ zach_reviews_raw[,reviewer := 'Zach']
 # Combine reviews into single table
 review_list <- list(tyler_reviews_raw, justin_reviews_raw, zach_reviews_raw)
 reviews <- rbindlist(review_list)
+reviews_with_movies_ratings <-  rbindlist(review_list)
 
 # Remove unwated columns
-reviews_with_movies_ratings <- reviews[,c(1:2,4:6,8,10:11) := NULL] # To be used for sentiment analysis
+reviews_with_movies_ratings <- reviews_with_movies_ratings[,c(1:2,4:6,8,10,11) := NULL] # To be used for sentiment analysis
 reviews <- reviews[,c(1:8,10:11) :=NULL] # To be used for text mining
 
 
@@ -42,19 +43,17 @@ reviews_with_movies_ratings <- reviews_with_movies_ratings %>%
         reviewer == 'Justin' & rating <= 69 ~ 'Average',
         reviewer == 'Justin' & rating <= 79 ~ 'Good',
         reviewer == 'Justin' & rating <= 89 ~ 'Great',
-        reviewer == 'Justin' & rating <= 100 ~ 'Exceptional',
         reviewer == 'Zach' & rating <= 24 ~ 'Horrible',
         reviewer == 'Zach' & rating <= 49 ~ 'Bad',
         reviewer == 'Zach' & rating <= 69 ~ 'Average',
         reviewer == 'Zach' & rating <= 79 ~ 'Good',
         reviewer == 'Zach' & rating <= 89 ~ 'Great',
-        reviewer == 'Zach' & rating <= 100 ~ 'Exceptional',
         reviewer == 'Tyler' & rating <= 24 ~ 'Horrible',
         reviewer == 'Tyler' & rating <= 49 ~ 'Bad',
         reviewer == 'Tyler' & rating <= 69 ~ 'Average',
         reviewer == 'Tyler' & rating <= 79 ~ 'Good',
         reviewer == 'Tyler' & rating <= 89 ~ 'Great',
-        reviewer == 'Tyler' & rating <= 100 ~ 'Exceptional'
+        TRUE ~ 'Exceptional'
     ))
 
 # Final processing - tokenization ----
