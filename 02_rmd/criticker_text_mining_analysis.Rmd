@@ -1,10 +1,9 @@
 ---
 title: "Criticker Reviews Text Mining Analysis"
 author: "Chris Selig"
-date: "`r Sys.Date()`"
-output: 
-    html_document: default
-    pdf_document: default
+date: "4/25/2020"
+output:
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -18,6 +17,8 @@ knitr::opts_chunk$set(
 ```
 
 ```{r loadLibraries}
+# Load libraries
+
 # Data load
 library(XML)
 library(data.table)
@@ -47,23 +48,25 @@ library(ggthemes)
 ```
 
 ```{r loadScripts}
+# Scripts to load custom functions
 source('../01_scripts/01_data_processing.R')
 source('../01_scripts/02_plotting.R')
 ```
 
 ```{r loadFonts}
+# Load custom fonts
 windowsFonts(memphis=windowsFont("memphis"))
 windowsFonts(ArnoProLightDisplay = windowsFont("Arno Pro Light Display"))
 ```
 
 # Summary
-My brother and a couple of his friends provide movie reviews on the site [Criticker.com](https://www.criticker.com/). I thought it would be fun to provide them with a text analysis of their movie reviews. What follows is that review.
+My brother and a couple of his friends provide movie reviews on the site [Criticker.com](https://www.criticker.com/). I thought it would be fun to provide them with a text analysis of their movie reviews. What follows is that analysis.
 
-The workflow for this project will start with an exploration of the data, 
+The workflow for this project will start with an exploration of the data, looking at single words and bigrams and end with sentence level sentiment analysis.
 
-The code for this analysis can be on my [Github page](https://github.com/chrisselig/movie_review_text_analysis).
+Since the readers this post was created for are not R users, the code has been left out. The code for this analysis can be found on my [Github page](https://github.com/chrisselig/movie_review_text_analysis).
 
-You can also find the three reviewers pages here:
+You can familarize yourself with the reviews at the three reviewer pages below, and I recommend a quick read if you enjoy movies!
 
 1. [Tyler](https://www.criticker.com/profile/Obdurate/)
 
@@ -72,11 +75,16 @@ You can also find the three reviewers pages here:
 3. [Justin](https://www.criticker.com/profile/TheRealJ_Ro/)
 
 ## The Data
-The dataset is simple. It is comprised of an xml export for each user and after cleaning, there are only two columns:
+The dataset is simple. It is comprised of an xml export for each user and after cleaning, there are only four columns:
 
-1. quote: The movie review
 
-2. reviewer: the first name of the reviewer
+1. filmname: Name of the movie
+
+2. quote: The movie review
+
+3. reviewer: The first name of the reviewer
+
+4. rating: The score each person attributes to the movie
 
 The following steps were taken to preprocess the data. 
 
@@ -86,7 +94,8 @@ Second, the movie reviews were tokenized. Tokenization means taking a review and
 
 Finally, a significant amount of words in the English language are not useful for sentiment analysis or prediction. Some examples are 'and' and 'the'. These words are otherwise known as stop words and have been removed from the dataset.
 
-## Exploratory Analysis
+# Exploratory Analysis
+
 A good place to start with any analysis is with an exploration of the data. 
 
 First, a quick look at how many reviews have been created and how many total words have been written for each reviewer.
@@ -211,6 +220,8 @@ tidy_reviews %>%
 
 Looking at the image above, the top word used across all three reviewers is 'movie', which is not a big surprise. Furthermore, none of the words on the list look out of place for movie reviewers. 
 
+You will notice that "movies" is also a popular word. I could have stemmed the dataset to remove that sort of thing from happening but I wanted the three reviewers to see the words as they were written. In case anyone does not know, stemming is the process of reducing a word to its stem that affixes to suffixes and prefixes. An example: "fishing", "fished" and "fisher" after stemming might be reduced to the word "fish".
+
 After knowing the top ten words, lets look at the top 10 words for each reviewer.
 
 ```{r}
@@ -322,7 +333,7 @@ freq_tbl %>%
     ) 
 ```
 
-Above, the frequencies of each word are plotted against each reviewer. Words along the dotted line have similar frequencies between the two reviewers. So, in the left panel, both Tyler and Justin use "movies", "bad", and "character" with similar frequencies. Words that are farther from the line are words that appear more often in one reviewers text than the other. For example from the right panel, Zach has the words "disney", and "viewer" appear more frequently than in Tyler's while Tyler has "pretty" and "nice" appear more often.
+Above, the frequencies of each word are plotted against each reviewer. Words along the dotted line have similar frequencies between the two reviewers. So, in the left panel, both Tyler and Justin use "movies", "bad", and "character" with similar frequencies. Words that are farther from the line are words that appear more often in one reviewers text than the other. For example from the right panel, Zach the words "disney", and "viewer" appear more frequently than in Tyler's while Tyler uses "pretty" and "nice" more often.
 
 ## Relationships Between Words
 
@@ -398,11 +409,11 @@ network_graph_func(
 )
 ```
 
-## Sentiment Analysis
+# Sentiment Analysis
 
-Now that we have taken a look at the individual and adjacent words, it is time to look at the sentiment of the movie reviews. We are not going to look at the sentiment of individual words because it is a bit too primitive and the English language syntactically complex and lexically rich. 
+Now that we have taken a look at the individual and adjacent words, it is time to look at the sentiment of the movie reviews. We are not going to look at the sentiment of individual words because it is a bit too primitive and the English language is syntactically complex and lexically rich. 
 
-The algorithm I will use is a bit better than sentiment by word. It uses "valence shifters" that help adjust the sentiment score. For example, if you do sentiment analysis on the single word "happy", the score is positive. Obviously though, if the phrase is "not happy" it is no longer positive but a single word sentiment analysis would not pick that up. The valence shifters will help adjust "not happy" to negative or at least less positive. Also, the sentiment score that will be returned will be an aggregate of each sentence for each review and movie, that way we only look at a single score per reviewer, movie. A score > 0 implies an overall positive sentiment.
+The algorithm I will use is a bit better than sentiment by word. It uses "valence shifters" that help adjust the sentiment score. For example, if you do sentiment analysis on the single word "happy", the score is positive. Obviously though, if the phrase is "not happy" it is no longer positive but a single word sentiment analysis would not pick that up. The valence shifters will help adjust "not happy" to negative or at least less positive. Also, the sentiment score that will be returned will be an aggregate of each sentence for each review and movie, that way we only look at a single score per reviewer and movie. A score > 0 implies an overall positive sentiment.
 
 ```{r calcSentiment}
 
@@ -435,56 +446,29 @@ plot_grid(j, t, z, labels = NULL, align = "h")
 
 Justin's distribution of sentiment seems to cluster close to 0 meaning his reviews are a bit more neutral. Tyler and Zach have a heavier tail on the right, with both distributions looking pretty close to a normal distribution.
 
-All three skew to the right. Tyler and Zach seem to have a greater tendence to higher average positive scores for movies.
+All three skew to the right. Tyler and Zach seem to have a greater tendency to higher average positive scores for movies.
 Scatter plot of rating to avg sentiment
 
 Now, let's take a look at how well the average sentiment scores relate to the actual ratings.
 
-```{r scatterPlot}
-sentence_sentiment %>% 
-    # filter(reviewer == 'Tyler') %>% 
-    left_join(reviews_with_movies_ratings, by = c('reviewer' = 'reviewer','filmname' = 'filmname')) %>% 
-    select(reviewer, ave_sentiment, rating) %>% 
-    filter(!is.na(rating)) %>% 
-    ggplot(aes(rating, ave_sentiment)) +
-    geom_point(color = '#4C586F') +
-    facet_wrap(~ reviewer) +
-    scale_x_discrete(breaks = breaks_pretty(n = 8)) +
-    ylab('Avg Sentiment')
+```{r JustinScatterPlot}
+scatterplot_function(reviewer_name = 'Justin')
 
 ```
 
-Reviewing the three scatterplots above, there definitely appears to be a positive relationship between rating and average sentiment. However, there also seems to be quite a high level of variablity within the average sentiment for each review.
+```{r tylerScatterPlot}
+scatterplot_function(reviewer_name = 'Tyler')
+```
 
-## Review Classificiation
-Finally, it is time to do a little classification modeling. The end goal here will be to see if we can correctly classify the reviews into the categories for each reviewer. 
+```{r zachScatterPlot}
+scatterplot_function(reviewer_name = 'Zach')
+```
 
-Bucket Stuff:
-
-Justin:
-Horrific: 0 - 15
-Bad: 16 - 34
-Average: 35 - 69
-Good: 70 - 79
-Great: 80 - 89
-Exceptional: 90 - 100
-
-Zach:
-Horrible: 0 - 24
-Bad: 25 - 49
-Average: 50 - 69
-Good: 70 - 79
-Great: 80 - 89
-Exceptional: 90 - 100
+Reviewing the three scatterplots above, there definitely appears to be a positive relationship between rating and average sentiment because as ratings increase the average sentiment also increases. However, there also seems to be quite a high level of variablity within the average sentiment for each review. I suspect part of the variability could be explained by the underlying dataset used for sentiment scoring is not training based on movie review data. For example, in the reviews I am certain the word "plot" appears often. In movie reviews "plot" is a talking point, but otherwise it can be negative like someone is plotting to do something bad.
 
 
-Tyler:
-Horrible: 0 - 24
-Bad: 25 - 49
-Average: 50 - 69
-Good: 70 - 79
-Great: 80 - 89
-Exceptional: 90 - 100
+# Next Steps
 
+There are two more avenues I want to explore further with this dataset. One is some classification modeling to see if I can classify reviews into the labels that each of the reviewers have provided for me.
 
-This is how each reviewer categorizes their review score.
+The final project is I want to take a single export of criticker reviews and plug them into a Shiny app that will provide some analysis on the reviews. I have not fleshed out what exactly this app will do yet, but some ideas off the top of my head is analyzing the ratings by things like genre and time period as well as some more sentiment analysis. 

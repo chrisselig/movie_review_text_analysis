@@ -1,0 +1,44 @@
+---
+title: "Movie Review Classification"
+author: "Chris Selig"
+date: "4/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Review Classificiation
+
+Finally, it is time to do a little classification modeling. The end goal here will be to see if we can correctly classify the reviews into the categories for each reviewer. 
+
+Bucket Stuff:
+    
+    Justin:
+    Horrific: 0 - 15
+Bad: 16 - 34
+Average: 35 - 69
+Good: 70 - 79
+Great: 80 - 89
+Exceptional: 90 - 100
+
+Zach:
+    Horrible: 0 - 24
+Bad: 25 - 49
+Average: 50 - 69
+Good: 70 - 79
+Great: 80 - 89
+Exceptional: 90 - 100
+
+
+Tyler:
+    Horrible: 0 - 24
+Bad: 25 - 49
+Average: 50 - 69
+Good: 70 - 79
+Great: 80 - 89
+Exceptional: 90 - 100
+
+
+This is how each reviewer categorizes their review score.
