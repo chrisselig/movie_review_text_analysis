@@ -33,6 +33,8 @@ library(ggrepel)
 library(gt) # create pretty tables
 library(ggraph) # create network graphs
 library(wordcloud) # create wordclouds
+library(cowplot)
+library(ggExtra)
 
 # Analytics
 library(tidytext)
@@ -400,20 +402,59 @@ network_graph_func(
 
 Now that we have taken a look at the individual and adjacent words, it is time to look at the sentiment of the movie reviews. We are not going to look at the sentiment of individual words because it is a bit too primitive and the English language syntactically complex and lexically rich. 
 
-The algorithm I will use is a bit better than sentiment by word. It uses "valence shifters" that help adjust the sentiment score. For example, if you do sentiment analysis on the single word "happy", the score is positive. Obviously though, if the phrase is "not happy" it is no longer positive but a single word sentiment analysis would not pick that up. The valence shifters will help adjust "not happy" to negative or at least less positive.
+The algorithm I will use is a bit better than sentiment by word. It uses "valence shifters" that help adjust the sentiment score. For example, if you do sentiment analysis on the single word "happy", the score is positive. Obviously though, if the phrase is "not happy" it is no longer positive but a single word sentiment analysis would not pick that up. The valence shifters will help adjust "not happy" to negative or at least less positive. Also, the sentiment score that will be returned will be an aggregate of each sentence for each review and movie, that way we only look at a single score per reviewer, movie. A score > 0 implies an overall positive sentiment.
 
-```{r}
-sentence_sentiment <- reviews %>%
+```{r calcSentiment}
+
+sentence_sentiment <- reviews_with_movies_ratings %>%
     group_by(reviewer) %>% 
     unnest_tokens(sentence, quote, token = 'sentences') %>% 
     ungroup() %>% 
-    get_sentences(quote) %>% 
-    # sentimentr::sentiment()
-    sentiment_by(quote, list(reviewer, movie))
+    get_sentences() %>% 
+    sentiment_by(by = c('reviewer', 'filmname'))
 
 ```
 
+First, here are the distributions of the scores by reviewer.
 
+```{r}
+j <- histogram_function(sentence_sentiment,
+                          reviewer_name = 'Justin',
+                          bin_num = 30)
+
+t <- histogram_function(sentence_sentiment,
+                          reviewer_name = 'Tyler',
+                          bin_num = 30)
+
+z <- histogram_function(sentence_sentiment,
+                          reviewer_name = 'Zach',
+                          bin_num = 30)
+
+plot_grid(j, t, z, labels = NULL, align = "h")
+```
+
+Justin's distribution of sentiment seems to cluster close to 0 meaning his reviews are a bit more neutral. Tyler and Zach have a heavier tail on the right, with both distributions looking pretty close to a normal distribution.
+
+All three skew to the right. Tyler and Zach seem to have a greater tendence to higher average positive scores for movies.
+Scatter plot of rating to avg sentiment
+
+Now, let's take a look at how well the average sentiment scores relate to the actual ratings.
+
+```{r scatterPlot}
+sentence_sentiment %>% 
+    # filter(reviewer == 'Tyler') %>% 
+    left_join(reviews_with_movies_ratings, by = c('reviewer' = 'reviewer','filmname' = 'filmname')) %>% 
+    select(reviewer, ave_sentiment, rating) %>% 
+    filter(!is.na(rating)) %>% 
+    ggplot(aes(rating, ave_sentiment)) +
+    geom_point(color = '#4C586F') +
+    facet_wrap(~ reviewer) +
+    scale_x_discrete(breaks = breaks_pretty(n = 8)) +
+    ylab('Avg Sentiment')
+
+```
+
+Reviewing the three scatterplots above, there definitely appears to be a positive relationship between rating and average sentiment. However, there also seems to be quite a high level of variablity within the average sentiment for each review.
 
 ## Review Classificiation
 Finally, it is time to do a little classification modeling. The end goal here will be to see if we can correctly classify the reviews into the categories for each reviewer. 
